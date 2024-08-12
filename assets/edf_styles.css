@@ -1,0 +1,60 @@
+/* Fira Code */
+@font-face {
+    font-family: 'Fira Code';
+    src: url("fira_code.ttf") format('truetype');
+}
+
+/* Mukta Regular */
+@font-face {
+    font-family: 'Mukta';
+    src: url("Mukta-Regular.ttf") format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/* Mukta Medium */
+@font-face {
+    font-family: 'Mukta';
+    src: url("Mukta-Medium.ttf") format('truetype');
+    font-weight: 500;
+    font-style: normal;
+}
+
+/* Mukta Bold */
+@font-face {
+    font-family: 'Mukta';
+    src: url("Mukta-Bold.ttf") format('truetype');
+    font-weight: bold;
+    font-style: normal;
+}
+
+
+h1.title {
+    border: 6px solid #07387a;
+    padding: 0.5em;
+    font-size: 1.5em;
+    text-transform: uppercase;
+}
+
+body {
+    font-family: "Mukta" !important;
+    color: #262730 !important;
+}
+
+h2 {
+    font-family: "Mukta" !important;
+    color: #07387a !important;
+}
+
+a {
+    color: #ff5e11 !important;
+}
+
+.progress {
+    color: #ff5e11 !important;
+}
+
+code {
+    font-family: "Fira Code" !important;
+    color: #be29ec !important;
+}

@@ -1,0 +1,483 @@
+---
+title: "{{< iconify fa6-brands:r-project >}} Best Practices"
+author: "*Corentin Ducloux*"
+date: 08-12-2024
+date-format: DD/MM/YYYY
+title-slide-attributes:
+    data-background-image: "assets/white_bg.jpg"
+    data-background-size: contain
+    data-background-opacity: "0.5"
+format: 
+    revealjs:
+        background-transition: fade
+        highlight-style: dracula
+        incremental: true
+        transition: fade
+        slide-number: true
+        navigation-mode: linear
+        footer: "EDF | DISC | CNEPE"
+        logo: assets/edf_logo.png
+        css: assets/edf_styles.css
+---
+
+## Plan {.smaller}
+
+1️⃣ Fonctions (Pûreté, Convention de nommage, Documentation)
+
+2️⃣ Linter
+
+3️⃣ Styler {{< iconify material-symbols:styler >}}
+
+4️⃣ Les logs 💬
+
+5️⃣ Le pipe {{< iconify mdi:pipe >}} : `|>`
+
+6️⃣ {{< iconify mdi:git >}} Git
+
+7️⃣ Interopérabilité
+
+## Les fonctions
+
+::: {.callout-tip}
+
+## Intérêt d'une fonction
+
+Une fonction en {{< iconify fa6-brands:r-project >}} est un bloc de code qui peut être réutilisé plusieurs fois pour effectuer une tâche spécifique. Elles disposent de **paramètres** et de **valeurs de retour**.
+:::
+
+> **Scénario** : Calcul de l'aire de rectangles de taille variable.
+
+Sur des cas aussi simples, on a tendance à déjà raisonner en fonction, mais ce n'est pas toujours vrai sur des cas plus complexes. En principe, il faut raisonner de manière **DRY**^[Don't Repeat Yourself].
+
+## Calcul, sans fonction
+
+```{r}
+#| echo: true
+
+longueur_1 <- 2
+largeur_1 <- 4
+aire_1 <- longueur_1 * largeur_1
+
+longueur_2 <- 2
+largeur_2 <- 8
+aire_2 <- longueur_2 * largeur_2
+
+print(aire_1)
+print(aire_2)
+```
+
+$\Rightarrow$ Naivement, on ré-écrit deux fois les mêmes choses.
+
+## Avec fonction
+
+```{r}
+#| echo: true
+
+calcul_aire <- function(longueur, largeur) {
+    aire <- longueur * largeur
+    return(aire)
+}
+
+print(calcul_aire(2, 4))
+print(calcul_aire(2, 8))
+```
+
+<hr>
+
+**CONCLUSION** : Utiliser des fonctions n'est <u>JAMAIS</u> une punition, il y a un véritable intérêt !
+
+## Une fonction horrible {.smaller}
+
+```{r}
+#| echo: true
+
+U <- c(6, 9, 10)
+
+zA1 <- function(v, c) {
+    return(U[v] * c)
+}
+
+zA1(1, 8)
+```
+
+❌ Quels sont les problèmes de la fonction `zA1` ?
+
+1. La fonction n'est pas pure - l'objet **U** est défini plus haut mais n'est pas inclus en tant qu'argument.
+2. Nom de la fonction pas clair -- à quoi correspond `zA1` ?
+3. Non-Respect des conventions de nommage (`snake_case` ou `TitleCase`).
+4. Arguments vraiments pas clairs *(v,c)*.
+5. Difficulté d'interprétation de la valeur de retour de la fonction `zA1`...
+6. La fonction n'est pas documentée.
+
+## Pureté d'une fonction
+
+::: {.callout-tip}
+
+## Pureté d'une fonction
+
+Une fonction pure possède les propriétés suivantes :
+
+- Sa valeur de retour est la même **quand on utilise les mêmes arguments** (pas de variation avec des variables statiques locales, ou des variables globales).
+
+- Pas d'effets de bord.
+
+:::
+
+On a vu que `zA1` viole la première propriété, puisqu'elle utilise **U**, une variable globale, non définie dans le corps de la fonction.
+
+## Aparté sur l'effet de bord {.smaller}
+
+```{r}
+#| echo: true
+#| code-fold: true
+type_age <- function(age) {
+    if (age <= 0) {
+        type <- "Un âge ne peut pas être négatif ou égal à 0"
+    } else if (age < 18) {
+        type <- "Mineur"
+    } else if (age < 99) {
+        type <- "Majeur"
+    } else {
+        type <- "Y'a un petit souci là..."
+    }
+
+    return(type)
+}
+```
+
+```{r}
+#| echo: true
+age <- 19
+
+type_age(age) |> print()
+
+modifie_age <- function() {
+    age <<- 2000 # Opérateur <<- à bannir !
+    return(age)
+}
+
+modifie_age() |> print()
+age |> print()
+type_age(age) |> print()
+```
+
+❓ On vient d'assigner une nouvelle valeur à `age`, alors même que `age` etait un argument d'entrée d'une autre fonction.
+
+## Convention de nommage
+
+![](assets/cases.png)
+
+## Documentation Explicite
+
+::: {.callout-tip}
+
+## Roxygen
+
+`{roxygen2}` est un package qui permet d'écrire la documentation des fonctions dans des fichiers `.R` à l'aide d'un squelette de commentaires situé au-dessus de la fonction.
+:::
+
+`@title` $\Rightarrow$ Titre de la fonction
+
+`@description` $\Rightarrow$ Description de la fonction
+
+`@param` $\Rightarrow$ Paramètres de la fonction
+
+`@returns` $\Rightarrow$ Valeurs de retour de la fonction
+
+`@examples` $\Rightarrow$ Exemples d'utilisation
+
+:::{.notes}
+Même si roxygen est principalement utilisé pour création de packages, ça a du sens de documenter même des fonctions qui ne sont pas contenues dans des packages.
+
+On est pas dans un package R, donc pas besoin d'importer des dépendances spécifiques ou d'exporter la fonction.
+:::
+
+## Documentation Implicite
+
+::: {.callout-warning}
+
+Il n'y a pas forcément besoin de documentation avec `{roxygen2}` dans des petites fonctions dont le traitement est simple, à partir du moment où il y a une **documentation implicite**.
+
+:::
+
+La documentation implicite revient à définir des noms de fonction et d'arguments cohérents *(si possible, en anglais)*.
+
+## Améliorons la fonction {.smaller}
+
+```{r}
+#| echo: true
+#| code-fold: true
+
+# VERSION 1 - avec intégration de la variable globale
+
+z_a1 <- function(u, v, c) {
+    return(u[v] * c)
+}
+```
+
+```{r}
+#| echo: true
+#| code-fold: true
+
+# VERSION 2 - avec documentation implicite
+
+multiply_vector_element <- function(integer_vector, index, multiplier) {
+    multiplied_element <- integer_vector[index] * multiplier
+    return(multiplied_element)
+}
+```
+
+```{r}
+#| echo: true
+#| code-fold: true
+
+# VERSION 3 - avec documentation complète
+
+#' @title Multiplie un élément de vecteur
+#' @description Multiplie un élément de vecteur choisi par l'utilisateur par un multiplicateur spécifié.
+#' 
+#' @param integer_vector Un vecteur numérique
+#' @param index L'indice de l'élément à multiplier dans le vecteur
+#' @param multiplier Le multiplicateur numérique
+#' 
+#' @returns L'élément multiplié
+#' 
+#' @examples
+#' multiply_vector_element(c(1,2,4), 2, 8)
+#' [1] 16
+multiply_vector_element <- function(integer_vector, index, multiplier) {
+    multiplied_element <- integer_vector[index] * multiplier
+    return(multiplied_element)
+}
+```
+
+
+## Linter
+
+::: {.callout-tip}
+
+## Le linter, un râleur bienveillant
+
+Permet d'analyser le code à la recherche d'erreurs et de problèmes stylistiques. 
+
+Sur {{< iconify fa6-brands:r-project >}}, le **linter** recommandé est le package `{lintr}`.
+
+:::
+
+```r
+install.packages("lintr")
+
+lintr::use_lintr(type = "tidyverse")
+lintr::lint("hello.R")
+```
+
+:::{.notes}
+On va installer le package, et ensuite on va initialiser une configuration de linter, et on va écrire un script tout pourri exprès pour se prendre plein d'avertissements.
+:::
+
+## Styler
+
+::: {.callout-tip}
+
+## Style Matters.
+
+`{styler}` est un package conçu pour formater le code {{< iconify fa6-brands:r-project >}} selon un style particulier pour améliorer la lisibilité.
+
+:::
+
+```r
+install.packages("styler")
+
+styler::style_file("hello.R")
+```
+
+<hr>
+
+
+$\Rightarrow$ C'est un outil très puissant qui fait gagner beaucoup de temps -- **l'utiliser c'est l'adopter**. 
+
+## Logs (1)
+
+::: {.callout-tip}
+
+## Intérêt des logs
+
+L'utilisation des logs est très bénéfique pour le débogage, la maintenance et la surveillance en production des potentiels problèmes d'une application. 
+
+Il existe de nombreuses libraries sur {{< iconify fa6-brands:r-project >}} pour mettre en place une politique de *logs*. Le plus abouti est le package `{logger}`.
+:::
+
+
+```r
+install.packages("logger")
+
+logger::log_info("Ceci est une info")
+logger::log_warn("Ceci est un avertissement")
+logger::log_error("Ceci est une erreur")
+logger::log_fatal("Ceci est une erreur très grave")
+```
+
+## Logs (2)
+
+$\Rightarrow$ Par défaut, `{logger}` va écrire les messages dans la console au format suivant :
+
+```bash
+INFO [2024-08-12 10:48:56] Ceci est une info
+WARN [2024-08-12 10:48:56] Ceci est un avertissement
+ERROR [2024-08-12 10:48:56] Ceci est une erreur
+FATAL [2024-08-12 10:48:56] Ceci est une erreur très grave
+```
+
+Mais on peut aussi configurer des fichiers de *logs* rotatifs avec `log_appender()`
+
+```r
+library(logger)
+
+log_file <- "logs/logfile"
+
+log_appender(appender_file(log_file, max_lines = 10))
+```
+
+## Logs (3) {.smaller}
+
+> Faisons une fonction qui va prendre un entrée un vecteur numérique, par exemple `c(1,8,9,15)` et qui va faire la moyenne de ce vecteur. Plusieurs conditions sont à vérifier, et les logs sont à mettre en place pour chaque condition.
+
+```{r}
+#| echo: true
+#| code-fold: true
+log_mean_calculation <- function(numbers) {
+    if (!is.numeric(numbers)) {
+        log_error("Le vecteur numbers : {numbers} contient des éléments non numériques.")
+        mean_value <- NA
+    } else if (length(numbers) == 0) {
+        log_warn("Le vecteur numbers est vide")
+        mean_value <- NA
+    } else {
+        log_info("Fonction appelée avec le vecteur de nombres suivants : {numbers}")
+        mean_value <- mean(numbers)
+        log_success("Le calcul de la moyenne est terminé. La valeur est : {mean_value}")
+    }
+
+    return(mean_value)
+}
+```
+
+:::{.notes}
+Après c'est vrai que pour une fonction qui calcule une moyenne c'est un peu **OVERKILL** de mettre des logs. Si on fait ça partout, on est pas rendus.
+
+Par contre, quand vous écrivez/importez des fichiers, quand vous faites des opérations importantes, les logs sont vraiment utiles. 
+
+Par exemple sur HPConnect quand l'utilisateur génère une fiche, en parallèle les logs sont aussi générés pour garder un état de ce qui s'est passé. En bref sur une appli Shiny qui est en prod, c'est bien d'avoir des logs.
+:::
+
+## Pipes {.smaller}
+
+::: {.callout-tip}
+
+Depuis la version 4.1, R a introduit le *pipe*, un nouvel opérateur noté `|>` -- le raccourci clavier associé est **Ctrl+Shift+M**.
+
+Le principe de cet opérateur est de passer l’élément situé à sa gauche comme premier argument de la fonction située à sa droite. Ainsi, l’écriture `x |> f()` est équivalente à `f(x)` et l’écriture `x |> f(y)` à `f(x, y)`.
+
+:::
+
+**Version sans pipe** :
+
+```{r}
+#| echo: true
+
+v_num <- c(1.2, 8.9, 55.6, 11.4)
+
+format(round(mean(v_num), digits = 1), decimal.mark = ",")
+```
+
+**Version avec pipe** :
+
+```{r}
+#| echo: true
+
+v_num |> 
+    mean() |> 
+    round(digits = 1) |> 
+    format(decimal.mark = ",")
+```
+
+$\Rightarrow$ Meilleure décomposition et lisibilité du code en chaînant les opérations. 
+
+## Git (1)
+
+::: {.callout-tip}
+
+## What the Git ?
+
+**Git** est un système de contrôle de version distribué. Il permet de gérer facilement l'intégration des changements dans le code source, créer des branches, naviguer dans l'historique de code, etc.
+
+:::
+
+::: {.callout-warning}
+
+## Installation de **Git**
+
+Il faut préalablement installer **Git** sur sa machine pour pouvoir commencer
+
+$\Rightarrow$ [https://git-scm.com/download/win](https://git-scm.com/download/win)
+
+:::
+
+## Git (2)
+
+Sur {{< iconify fa6-brands:r-project >}}, le package `{gert}` permet justement de faire des manipulations avec **Git**, tout en restant dans la console {{< iconify fa6-brands:r-project >}}.
+
+```r
+install.packages("gert")
+
+gert::git_init()
+gert::git_add("mon_fichier.txt")
+gert::git_add(".")
+gert::git_branch()
+gert::git_branch_list()
+gert::git_branch_create("nouvelle_branche")
+gert::git_status()
+gert::git_commit("Ma modification")
+gert::git_push()
+gert::git_pull()
+```
+
+## Interopérabilité (1) {.smaller}
+
+Sur {{< iconify fa6-brands:r-project >}}, il existe de nombreuses manières de stocker des données : créer des fichiers *csv*, *xlsx*, *json*, etc. 
+
+Un format se démarque en particulier : le `.RData`. Il est très simple d'utilisation et est compressé par défaut, ce qui le rend attractif... mais c'est un format propriétaire.
+
+::: {.callout-tip}
+
+## Le format `parquet`
+
+Crée en 2013 par **Cloudera** et {{< iconify fa6-brands:twitter >}} **Twitter** pour répondre à des problématiques de Big Data.
+
+**Avantages du format** :
+
+1️⃣ Présence du schéma de données dans le fichier
+
+2️⃣ Compatibilité avec Java, R, Python, C++, Rust, etc.
+
+3️⃣ Compression des données grâce à son format "orienté colonnes"
+
+:::
+
+
+:::{.notes}
+Problème des RData : c'esgt pour le coup un super format à partir du moment où on reste dans R. Mais par contre si on veut manipuler les données avec un autre langage là c'est pas la même histoire. L'interopérabilité elle est proche de 0. ça c'est pas ouf. 
+:::
+
+## Interopérabilité (2) {.smaller}
+
+```r
+install.packages("arrow")
+```
+
+
+$\Rightarrow$ **Mise en pratique** !
+
+## Tidyverse
+
+`{tibble}` et `{purrr}`
